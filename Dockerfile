@@ -7,6 +7,8 @@ ENV PYTHONPATH=/app
 
 # Set work directory
 WORKDIR /app
+COPY backend/app /app
+ENV PYTHONPATH=/app
 
 # Install system dependencies
 RUN apt-get update && \
