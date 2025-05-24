@@ -44,5 +44,4 @@ passlib[bcrypt]==1.7.4
 structlog==23.2.0
 rich==13.7.0
 
-# CORS support
-python-cors==1.7.0 
+# CORS support is built into FastAPI - no additional package needed 
