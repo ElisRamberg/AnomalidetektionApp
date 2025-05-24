@@ -8,6 +8,8 @@ from .config import get_settings
 from .database import init_db, close_db
 from .api import health
 
+# Import and include API routers
+from .api import upload, analysis, transactions, strategies
 
 settings = get_settings()
 
@@ -52,11 +54,29 @@ app.include_router(
     tags=["health"]
 )
 
-# TODO: Add other routers as they are implemented
-# app.include_router(upload.router, prefix=settings.api_v1_prefix, tags=["upload"])
-# app.include_router(analysis.router, prefix=settings.api_v1_prefix, tags=["analysis"])
-# app.include_router(transactions.router, prefix=settings.api_v1_prefix, tags=["transactions"])
-# app.include_router(strategies.router, prefix=settings.api_v1_prefix, tags=["strategies"])
+app.include_router(
+    upload.router,
+    prefix=settings.api_v1_prefix,
+    tags=["upload"]
+)
+
+app.include_router(
+    analysis.router,
+    prefix=settings.api_v1_prefix,
+    tags=["analysis"]
+)
+
+app.include_router(
+    transactions.router,
+    prefix=settings.api_v1_prefix,
+    tags=["transactions"]
+)
+
+app.include_router(
+    strategies.router,
+    prefix=settings.api_v1_prefix,
+    tags=["strategies"]
+)
 
 
 @app.get("/")
