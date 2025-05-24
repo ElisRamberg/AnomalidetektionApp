@@ -1,0 +1,18 @@
+# .gitpod.yml
+image:
+  file: Dockerfile  # Use your existing Dockerfile
+
+tasks:
+  - name: Start Dev Stack
+    init: docker-compose build
+    command: docker-compose up
+
+ports:
+  - port: 8000
+    onOpen: open-preview
+  - port: 5555
+    onOpen: open-browser
+  - port: 5432
+    visibility: private
+  - port: 6379
+    visibility: private
