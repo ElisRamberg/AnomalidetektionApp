@@ -1,8 +1,9 @@
 version: '3.8'
 
 services:
+  # Database
   postgres:
-    image: postgres:15
+    image: postgres:15-alpine
     environment:
       POSTGRES_DB: anomaly_detection
       POSTGRES_USER: postgres
@@ -11,13 +12,13 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  # Redis for caching and Celery
   redis:
     image: redis:7-alpine
     ports:
@@ -30,6 +31,22 @@ services:
       timeout: 3s
       retries: 3
 
+  # Frontend (Next.js)
+  frontend:
+    build:
+      context: .
+      target: frontend-builder
+    working_dir: /app/frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app/frontend
+      - /app/frontend/node_modules
+    command: npm run dev
+    environment:
+      - NODE_ENV=development
+
+  # Backend API
   backend:
     build: .
     ports:
@@ -40,17 +57,18 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/1
       - CELERY_RESULT_BACKEND=redis://redis:6379/2
       - DEBUG=true
-      - CORS_ORIGINS=["http://localhost:3000", "http://127.0.0.1:3000"]
+      - CORS_ORIGINS=["http://localhost:3000"]
     volumes:
-      - ./backend/app:/app
+      - ./backend:/app
       - ./uploads:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
+  # Celery worker for background tasks
   celery:
     build: .
     environment:
@@ -59,16 +77,17 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/1
       - CELERY_RESULT_BACKEND=redis://redis:6379/2
     volumes:
-      - ./backend/app:/app
+      - ./backend:/app
       - ./uploads:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: celery -A tasks.celery worker --loglevel=info
+    command: celery -A app.celery_app worker --loglevel=info
 
-  celery-flower:
+  # Celery monitoring (optional)
+  flower:
     build: .
     ports:
       - "5555:5555"
@@ -78,8 +97,8 @@ services:
     depends_on:
       - redis
     volumes:
-      - ./backend/app:/app
-    command: celery -A tasks.celery flower --port=5555
+      - ./backend:/app
+    command: celery -A app.celery_app flower --port=5555
 
 volumes:
   postgres_data:

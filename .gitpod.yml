@@ -1,18 +1,54 @@
 # .gitpod.yml
+# Gitpod configuration for Anomaly Detection App
 image:
-  file: Dockerfile  # Use your existing Dockerfile
+  file: Dockerfile
 
+# Tasks to run on workspace startup
 tasks:
-  - name: Start Dev Stack
-    init: docker-compose build
-    command: docker-compose up
+  - name: Setup and Start Services
+    init: |
+      echo "🚀 Setting up Anomaly Detection App..."
+      docker-compose build
+    command: |
+      echo "🔥 Starting all services..."
+      docker-compose up
 
+# Port configuration
 ports:
-  - port: 8000
+  # Frontend (Next.js)
+  - port: 3000
     onOpen: open-preview
-  - port: 5555
+    name: Frontend
+    description: Next.js frontend application
+  
+  # Backend API
+  - port: 8000
     onOpen: open-browser
+    name: Backend API
+    description: FastAPI backend with docs at /docs
+  
+  # Celery Flower (monitoring)
+  - port: 5555
+    onOpen: ignore
+    name: Celery Flower
+    description: Celery task monitoring
+  
+  # Database (internal)
   - port: 5432
+    onOpen: ignore
     visibility: private
+    name: PostgreSQL
+  
+  # Redis (internal)
   - port: 6379
+    onOpen: ignore
     visibility: private
+    name: Redis
+
+# VS Code extensions
+vscode:
+  extensions:
+    - ms-python.python
+    - ms-python.flake8
+    - bradlc.vscode-tailwindcss
+    - esbenp.prettier-vscode
