@@ -1,5 +1,7 @@
+version: '3.8'
+
 services:
-  # Database
+  # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
     environment:
@@ -16,7 +18,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis for caching and Celery
+  # Redis for caching and Celery broker
   redis:
     image: redis:7-alpine
     ports:
@@ -29,22 +31,7 @@ services:
       timeout: 3s
       retries: 3
 
-  # Frontend (Next.js)
-  frontend:
-    build:
-      context: .
-      target: frontend-builder
-    working_dir: /app/frontend
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend:/app/frontend
-      - /app/frontend/node_modules
-    command: npm run dev
-    environment:
-      - NODE_ENV=development
-
-  # Backend API
+  # FastAPI Backend
   backend:
     build: .
     ports:
@@ -55,18 +42,17 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/1
       - CELERY_RESULT_BACKEND=redis://redis:6379/2
       - DEBUG=true
-      - CORS_ORIGINS=["http://localhost:3000","http://127.0.0.1:3000"]
+      - CORS_ORIGINS=["http://localhost:3000"]
     volumes:
-      - ./backend/app:/app
       - ./uploads:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
-  # Celery worker for background tasks
+  # Celery Worker
   celery:
     build: .
     environment:
@@ -75,16 +61,15 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/1
       - CELERY_RESULT_BACKEND=redis://redis:6379/2
     volumes:
-      - ./backend/app:/app
       - ./uploads:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: celery -A celery_app:celery worker --loglevel=info
+    command: celery -A app.celery_app worker --loglevel=info
 
-  # Celery monitoring (optional)
+  # Celery Flower (Task Monitor)
   flower:
     build: .
     ports:
@@ -94,9 +79,22 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/2
     depends_on:
       - redis
+    command: celery -A app.celery_app flower --port=5555
+
+  # Next.js Frontend
+  frontend:
+    image: node:18-alpine
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
     volumes:
-      - ./backend/app:/app
-    command: celery -A celery_app:celery flower --port=5555
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    command: sh -c "npm install && npm run dev"
 
 volumes:
   postgres_data:
