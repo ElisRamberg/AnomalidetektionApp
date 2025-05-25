@@ -12,7 +12,11 @@ WORKDIR /app
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         gcc \
-        libpq-dev && \
+        libpq-dev \
+        git \
+        curl \
+        vim \
+        nano && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy and install Python dependencies

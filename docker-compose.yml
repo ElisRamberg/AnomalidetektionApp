@@ -44,6 +44,7 @@ services:
       - DEBUG=true
       - CORS_ORIGINS=["http://localhost:3000"]
     volumes:
+      - .:/app
       - ./uploads:/app/uploads
     depends_on:
       postgres:
@@ -61,6 +62,7 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/1
       - CELERY_RESULT_BACKEND=redis://redis:6379/2
     volumes:
+      - .:/app
       - ./uploads:/app/uploads
     depends_on:
       postgres:
@@ -77,6 +79,8 @@ services:
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/1
       - CELERY_RESULT_BACKEND=redis://redis:6379/2
+    volumes:
+      - .:/app
     depends_on:
       - redis
     command: celery -A app.celery_app flower --port=5555
