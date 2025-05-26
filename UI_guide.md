@@ -10,7 +10,6 @@
 - **Scalability**: Built-in API routes, middleware support for authentication/authorization
 - **Maintenance**: Strong TypeScript support, excellent developer experience
 
-
 ### **UI Component Library: shadcn/ui + Radix UI**
 
 **Why chosen:**
@@ -19,7 +18,6 @@
 - **Customizable**: Tailwind-based styling, easy to theme and maintain
 - **Industry Adoption**: Rapidly becoming the standard for React applications
 - **AI Friendly**: Well-documented, copy-paste components, no runtime dependencies
-
 
 ### **Data Visualization: Recharts + D3.js**
 
@@ -31,16 +29,10 @@
 - Excellent documentation and AI knowledge
 - Built on D3.js but much simpler to use
 
-
-
 - **D3.js**: For complex visualizations like correlation heatmaps
 
 - Industry standard for custom data visualizations
 - Powerful and flexible for financial data representation
-
-
-
-
 
 ### **Table Management: TanStack Table (React Table v8)**
 
@@ -51,7 +43,6 @@
 - **Flexibility**: Headless design, works perfectly with shadcn/ui
 - **Industry Standard**: Most popular table library for React
 
-
 ### **State Management: Zustand + React Query (TanStack Query)**
 
 **Why chosen:**
@@ -59,7 +50,6 @@
 - **Zustand**: Lightweight, simple state management for UI state
 - **React Query**: Perfect for server state, caching, and data fetching
 - **Maintenance**: Minimal boilerplate, excellent TypeScript support
-
 
 ### **Styling: Tailwind CSS**
 
@@ -69,7 +59,6 @@
 - **Consistency**: Design system built-in, easy to maintain
 - **Performance**: Purged CSS, small bundle sizes
 - **AI Knowledge**: Extremely well-documented and understood
-
 
 ### **Form Management: React Hook Form + Zod**
 

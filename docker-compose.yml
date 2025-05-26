@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   # PostgreSQL Database
@@ -98,7 +98,7 @@ services:
       - /app/node_modules
     depends_on:
       - backend
-    command: sh -c "npm install && npm run dev"
+    command: sh -c "npm install --legacy-peer-deps && npm run dev"
 
 volumes:
   postgres_data:
