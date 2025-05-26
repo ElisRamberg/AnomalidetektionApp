@@ -7,11 +7,13 @@ This document outlines the backend architecture for an anomaly detection system 
 ## System Overview
 
 ### Architecture Pattern: ETL (Extract, Transform, Load)
+
 - **Extract**: File upload and validation system
 - **Transform**: Data preprocessing and anomaly detection algorithms
 - **Load**: Database storage for raw data, features, and analysis results
 
 ### Design Principles
+
 - **Modularity**: Easy to add/modify detection algorithms
 - **Testability**: Clear separation of concerns with comprehensive testing
 - **Scalability**: Async processing for large datasets
@@ -20,7 +22,9 @@ This document outlines the backend architecture for an anomaly detection system 
 ## Technology Stack
 
 ### Core Framework: FastAPI + Python 3.11+
+
 **Why chosen:**
+
 - **Performance**: Async support, excellent for I/O operations
 - **Documentation**: Auto-generated OpenAPI/Swagger docs
 - **Type Safety**: Built-in Pydantic models for data validation
@@ -28,13 +32,16 @@ This document outlines the backend architecture for an anomaly detection system 
 - **Testing**: Great testing ecosystem with pytest
 
 ### Database: PostgreSQL + SQLAlchemy
+
 **Why chosen:**
+
 - **ACID Compliance**: Critical for financial data integrity
 - **JSON Support**: Native JSON columns for flexible metadata storage
 - **Performance**: Excellent indexing and query optimization
 - **Ecosystem**: Strong Python integration with SQLAlchemy ORM
 
 ### Additional Libraries
+
 - **pandas**: Data manipulation and analysis
 - **numpy**: Numerical computations
 - **scikit-learn**: Machine learning algorithms
@@ -131,6 +138,7 @@ backend/
 ### Core Tables
 
 #### 1. file_uploads
+
 ```sql
 CREATE TABLE file_uploads (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -148,6 +156,7 @@ CREATE TABLE file_uploads (
 ```
 
 #### 2. transactions
+
 ```sql
 CREATE TABLE transactions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -159,7 +168,7 @@ CREATE TABLE transactions (
     raw_data JSONB NOT NULL,
     processed_data JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    
+
     -- Indexes for performance
     CREATE INDEX idx_transactions_upload_id ON transactions(upload_id);
     CREATE INDEX idx_transactions_timestamp ON transactions(timestamp);
@@ -169,6 +178,7 @@ CREATE TABLE transactions (
 ```
 
 #### 3. analysis_runs
+
 ```sql
 CREATE TABLE analysis_runs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -179,13 +189,14 @@ CREATE TABLE analysis_runs (
     completed_at TIMESTAMP WITH TIME ZONE,
     error_message TEXT,
     metadata JSONB,
-    
+
     CREATE INDEX idx_analysis_runs_upload_id ON analysis_runs(upload_id);
     CREATE INDEX idx_analysis_runs_strategy_id ON analysis_runs(strategy_id);
 );
 ```
 
 #### 4. anomaly_scores
+
 ```sql
 CREATE TABLE anomaly_scores (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -197,7 +208,7 @@ CREATE TABLE anomaly_scores (
     confidence DECIMAL(5,4),
     metadata JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    
+
     -- Composite index for efficient queries
     CREATE INDEX idx_anomaly_scores_transaction_analysis ON anomaly_scores(transaction_id, analysis_run_id);
     CREATE INDEX idx_anomaly_scores_algorithm ON anomaly_scores(algorithm_type, algorithm_name);
@@ -205,6 +216,7 @@ CREATE TABLE anomaly_scores (
 ```
 
 #### 5. strategies
+
 ```sql
 CREATE TABLE strategies (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -219,6 +231,7 @@ CREATE TABLE strategies (
 ```
 
 #### 6. rule_flags
+
 ```sql
 CREATE TABLE rule_flags (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -229,7 +242,7 @@ CREATE TABLE rule_flags (
     flag_value TEXT,
     metadata JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    
+
     CREATE INDEX idx_rule_flags_transaction_analysis ON rule_flags(transaction_id, analysis_run_id);
     CREATE INDEX idx_rule_flags_rule_name ON rule_flags(rule_name);
 );
@@ -240,12 +253,14 @@ CREATE TABLE rule_flags (
 ### Extract Phase
 
 #### File Upload Process
+
 1. **Validation**: File type, size, and basic structure validation
 2. **Storage**: Temporary file storage with unique identifiers
 3. **Parsing**: Format-specific parsers (CSV, JSON, Excel, SIE4, XML)
 4. **Error Handling**: Detailed error messages for file format issues
 
 #### Supported File Formats
+
 - **CSV**: Standard comma-separated values
 - **JSON**: Structured JSON with transaction arrays
 - **Excel**: .xlsx and .xls formats
@@ -255,6 +270,7 @@ CREATE TABLE rule_flags (
 ### Transform Phase
 
 #### Data Preprocessing
+
 1. **ID Generation**: Create unique transaction IDs if not present
 2. **Data Cleaning**: Handle missing values, normalize formats
 3. **Validation**: Ensure required fields are present and valid
@@ -266,31 +282,31 @@ CREATE TABLE rule_flags (
 # Base Algorithm Interface
 class AnomalyDetectionAlgorithm(ABC):
     """Base class for all anomaly detection algorithms"""
-    
+
     @abstractmethod
     def name(self) -> str:
         """Return algorithm name"""
         pass
-    
+
     @abstractmethod
     def algorithm_type(self) -> str:
         """Return algorithm type (statistical, rule_based, ml_based)"""
         pass
-    
+
     @abstractmethod
     def detect(self, transactions: pd.DataFrame, config: dict) -> pd.DataFrame:
         """
         Run anomaly detection
-        
+
         Args:
             transactions: DataFrame with transaction data
             config: Algorithm-specific configuration
-            
+
         Returns:
             DataFrame with columns: transaction_id, score, confidence, metadata
         """
         pass
-    
+
     @abstractmethod
     def validate_config(self, config: dict) -> bool:
         """Validate algorithm configuration"""
@@ -300,12 +316,14 @@ class AnomalyDetectionAlgorithm(ABC):
 #### Algorithm Types
 
 1. **Statistical Methods**
+
    - Z-Score analysis with configurable thresholds
    - Correlation analysis for related transactions
    - Time series anomaly detection
    - Moving average deviations
 
 2. **Rule-Based Methods**
+
    - Weekend transaction thresholds
    - Unusual periodization patterns
    - Account-specific rules
@@ -320,6 +338,7 @@ class AnomalyDetectionAlgorithm(ABC):
 ### Load Phase
 
 #### Data Storage Strategy
+
 - **Raw Data**: Original transaction data preserved
 - **Processed Data**: Cleaned and enriched transaction data
 - **Feature Scores**: Algorithm outputs as numerical scores
@@ -331,6 +350,7 @@ class AnomalyDetectionAlgorithm(ABC):
 ### REST API Endpoints
 
 #### File Upload
+
 ```
 POST /api/v1/upload
 - Multipart file upload
@@ -347,6 +367,7 @@ GET /api/v1/upload/history
 ```
 
 #### Analysis Management
+
 ```
 POST /api/v1/analysis/run
 - Trigger analysis with strategy
@@ -362,6 +383,7 @@ GET /api/v1/analysis/{run_id}/results
 ```
 
 #### Transaction Data
+
 ```
 GET /api/v1/transactions
 - List transactions with filtering
@@ -378,6 +400,7 @@ GET /api/v1/transactions/anomalies
 ```
 
 #### Strategy Management
+
 ```
 GET /api/v1/strategies
 - List available strategies
@@ -399,12 +422,14 @@ GET /api/v1/strategies/{strategy_id}/preview
 ## Async Processing with Celery
 
 ### Task Types
+
 1. **File Processing**: Parse and validate uploaded files
 2. **Data Transformation**: Clean and enrich transaction data
 3. **Algorithm Execution**: Run anomaly detection algorithms
 4. **Strategy Evaluation**: Apply strategies and calculate results
 
 ### Task Architecture
+
 ```python
 @celery.task(bind=True, max_retries=3)
 def process_uploaded_file(self, upload_id: str):
@@ -434,6 +459,7 @@ def run_anomaly_detection(self, upload_id: str, strategy_id: str):
 ## Testing Strategy
 
 ### Test Coverage Areas
+
 1. **API Tests**: Endpoint functionality and error handling
 2. **Service Tests**: Business logic validation
 3. **Algorithm Tests**: Algorithm accuracy and performance
@@ -441,6 +467,7 @@ def run_anomaly_detection(self, upload_id: str, strategy_id: str):
 5. **Performance Tests**: Load testing for large datasets
 
 ### Test Data Strategy
+
 - **Sample Files**: Representative test files for each supported format
 - **Edge Cases**: Invalid data, missing fields, large files
 - **Performance Data**: Large datasets for stress testing
@@ -448,12 +475,14 @@ def run_anomaly_detection(self, upload_id: str, strategy_id: str):
 ## Security Considerations
 
 ### Data Protection
+
 - **File Validation**: Strict validation to prevent malicious uploads
 - **Data Sanitization**: Clean all input data
 - **Access Control**: Role-based access to sensitive operations
 - **Audit Logging**: Track all data access and modifications
 
 ### Infrastructure Security
+
 - **Environment Variables**: Secure configuration management
 - **Database Security**: Encrypted connections and secure credentials
 - **API Security**: Rate limiting and input validation
@@ -462,11 +491,13 @@ def run_anomaly_detection(self, upload_id: str, strategy_id: str):
 ## Deployment Strategy
 
 ### Development Environment
+
 - **Docker Compose**: Local development with all services
 - **Hot Reloading**: FastAPI development server
 - **Test Database**: Isolated PostgreSQL instance
 
 ### Production Considerations
+
 - **Container Orchestration**: Kubernetes or Docker Swarm
 - **Database**: Managed PostgreSQL service
 - **Caching**: Redis for Celery and API caching
@@ -476,16 +507,19 @@ def run_anomaly_detection(self, upload_id: str, strategy_id: str):
 ## Future Enhancements
 
 ### Performance Optimizations
+
 - **Database Indexing**: Query optimization for large datasets
 - **Caching Layer**: Redis caching for frequently accessed data
 - **Parallel Processing**: Multi-threaded algorithm execution
 
 ### Algorithm Improvements
+
 - **Model Training**: Custom ML models based on historical data
 - **Ensemble Methods**: Combine multiple algorithms for better accuracy
 - **Real-time Processing**: Stream processing for live transaction data
 
 ### User Experience
+
 - **Real-time Updates**: WebSocket connections for live progress
 - **Advanced Filtering**: Complex query builder for transaction analysis
 - **Export Features**: PDF reports and data export functionality
@@ -493,30 +527,35 @@ def run_anomaly_detection(self, upload_id: str, strategy_id: str):
 ## Implementation Phases
 
 ### Phase 1: Core Infrastructure (Week 1-2)
+
 - Set up FastAPI application structure
 - Implement database models and migrations
 - Create basic file upload functionality
 - Set up testing framework
 
 ### Phase 2: ETL Pipeline (Week 3-4)
+
 - File parsing for all supported formats
 - Data transformation and validation
 - Basic algorithm framework
 - Simple statistical algorithms
 
 ### Phase 3: Advanced Algorithms (Week 5-6)
+
 - Rule-based algorithm framework
 - ML-based algorithms
 - Strategy management system
 - Algorithm result storage
 
 ### Phase 4: API Completion (Week 7-8)
+
 - Complete all API endpoints
 - Async processing with Celery
 - Error handling and validation
 - Performance optimization
 
 ### Phase 5: Testing & Documentation (Week 9-10)
+
 - Comprehensive test suite
 - API documentation
 - Deployment configuration

@@ -1,17 +1,17 @@
 "use client"
 
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { AlertTriangle, BarChart3, GitBranch, LayoutDashboard, Settings, Table, Upload } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Table, BarChart3, GitBranch, Settings, AlertTriangle, Upload } from "lucide-react"
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Upload Data", href: "/upload", icon: Upload },
   { name: "Transactions", href: "/transactions", icon: Table },
   { name: "Group Analysis", href: "/group-analysis", icon: BarChart3 },
   { name: "Correlations", href: "/correlations", icon: GitBranch },
+  { name: "Upload Data", href: "/upload", icon: Upload },
   { name: "Strategy Editor", href: "/strategy", icon: Settings },
 ]
 

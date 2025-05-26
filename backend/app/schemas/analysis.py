@@ -1,19 +1,47 @@
 """Analysis-related Pydantic schemas."""
 
 from datetime import datetime
-from typing import Optional, Dict, Any, List
-from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Optional
 from uuid import UUID
+
+from pydantic import BaseModel, Field
 
 
 class AnalysisRunCreate(BaseModel):
     """Schema for creating analysis runs."""
+
     upload_id: UUID = Field(..., description="ID of the uploaded file to analyze")
     strategy_id: UUID = Field(..., description="ID of the strategy to use")
 
 
+class AnalysisRunRequest(BaseModel):
+    """Schema for analysis run requests."""
+
+    upload_id: UUID = Field(..., description="ID of the uploaded file to analyze")
+    strategy_id: UUID = Field(..., description="ID of the strategy to use")
+    created_by: Optional[str] = Field(None, description="User who created the request")
+
+
+class AnalysisRunStatus(BaseModel):
+    """Schema for analysis run status responses."""
+
+    id: UUID
+    upload_id: UUID
+    strategy_id: UUID
+    status: str
+    started_at: datetime
+    completed_at: Optional[datetime] = None
+    progress_percentage: float
+    current_step: Optional[str] = None
+    error_message: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
 class AnalysisRunResponse(BaseModel):
     """Schema for analysis run responses."""
+
     id: UUID
     upload_id: UUID
     strategy_id: UUID
@@ -27,13 +55,14 @@ class AnalysisRunResponse(BaseModel):
     processed_transactions: int
     progress_percentage: float
     duration_seconds: float
-    
+
     class Config:
         from_attributes = True
 
 
 class AnalysisRunListResponse(BaseModel):
     """Schema for paginated analysis run list responses."""
+
     analysis_runs: List[AnalysisRunResponse]
     total: int
     page: int
@@ -44,6 +73,7 @@ class AnalysisRunListResponse(BaseModel):
 
 class AnomalyScoreResponse(BaseModel):
     """Schema for anomaly score responses."""
+
     id: UUID
     transaction_id: UUID
     analysis_run_id: UUID
@@ -54,13 +84,14 @@ class AnomalyScoreResponse(BaseModel):
     confidence: Optional[float] = None
     metadata: Optional[Dict[str, Any]] = None
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
 
 class RuleFlagResponse(BaseModel):
     """Schema for rule flag responses."""
+
     id: UUID
     transaction_id: UUID
     analysis_run_id: UUID
@@ -69,13 +100,14 @@ class RuleFlagResponse(BaseModel):
     flag_value: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
 
 class AnalysisResultsResponse(BaseModel):
     """Schema for complete analysis results."""
+
     analysis_run: AnalysisRunResponse
     anomaly_scores: List[AnomalyScoreResponse]
     rule_flags: List[RuleFlagResponse]
@@ -84,6 +116,7 @@ class AnalysisResultsResponse(BaseModel):
 
 class AnalysisResultsSummary(BaseModel):
     """Schema for analysis results summary."""
+
     analysis_run_id: UUID
     total_transactions: int
     anomalous_transactions: int
@@ -96,16 +129,17 @@ class AnalysisResultsSummary(BaseModel):
 
 class AnalysisFilter(BaseModel):
     """Schema for filtering analysis results."""
+
     upload_id: Optional[UUID] = None
     strategy_id: Optional[UUID] = None
     status: Optional[str] = None
     date_from: Optional[datetime] = None
     date_to: Optional[datetime] = None
-    
+
     # Pagination
     page: int = Field(default=1, ge=1)
     per_page: int = Field(default=50, ge=1, le=1000)
-    
+
     # Sorting
     sort_by: str = Field(default="started_at", description="Field to sort by")
     sort_order: str = Field(default="desc", description="Sort order: asc or desc")
@@ -113,6 +147,7 @@ class AnalysisFilter(BaseModel):
 
 class AnalysisProgress(BaseModel):
     """Schema for analysis progress updates."""
+
     analysis_run_id: UUID
     status: str
     progress_percentage: float
@@ -123,6 +158,7 @@ class AnalysisProgress(BaseModel):
 
 class AlgorithmResult(BaseModel):
     """Schema for individual algorithm results."""
+
     algorithm_type: str
     algorithm_name: str
     transactions_analyzed: int
@@ -135,9 +171,10 @@ class AlgorithmResult(BaseModel):
 
 class AnalysisPerformanceMetrics(BaseModel):
     """Schema for analysis performance metrics."""
+
     analysis_run_id: UUID
     total_execution_time: float
     algorithm_execution_times: Dict[str, float]
     memory_usage_peak: Optional[float] = None
     transactions_per_second: float
-    algorithms_executed: List[AlgorithmResult] 
+    algorithms_executed: List[AlgorithmResult]

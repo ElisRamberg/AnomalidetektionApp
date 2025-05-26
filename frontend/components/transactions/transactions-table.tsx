@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   type ColumnDef,
@@ -11,8 +12,7 @@ import {
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { useState } from "react"
 
 // Define the transaction data type
 type Transaction = {
@@ -164,7 +164,15 @@ const columns: ColumnDef<Transaction>[] = [
     header: "Date & Time",
     cell: ({ row }) => {
       const timestamp = new Date(row.getValue("timestamp"))
-      return <div>{timestamp.toLocaleString()}</div>
+      // Use manual formatting to ensure consistent server/client rendering
+      const year = timestamp.getFullYear()
+      const month = String(timestamp.getMonth() + 1).padStart(2, '0')
+      const day = String(timestamp.getDate()).padStart(2, '0')
+      const hours = String(timestamp.getHours()).padStart(2, '0')
+      const minutes = String(timestamp.getMinutes()).padStart(2, '0')
+      const seconds = String(timestamp.getSeconds()).padStart(2, '0')
+      const formatted = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+      return <div>{formatted}</div>
     },
   },
   {

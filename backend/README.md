@@ -14,11 +14,13 @@ A FastAPI-based backend for anomaly detection in financial transaction data usin
 ## Architecture
 
 ### ETL Pipeline
+
 - **Extract**: File upload, validation, and parsing
 - **Transform**: Data preprocessing and anomaly detection algorithms
 - **Load**: Storage of raw data, processed data, and analysis results
 
 ### Technology Stack
+
 - **FastAPI**: Modern, fast web framework for building APIs
 - **PostgreSQL**: Robust database with JSON support
 - **Redis**: Caching and Celery message broker
@@ -30,17 +32,20 @@ A FastAPI-based backend for anomaly detection in financial transaction data usin
 ## Quick Start
 
 ### Prerequisites
+
 - Docker and Docker Compose
 - Python 3.11+ (for local development)
 
 ### Development Setup
 
 1. **Clone the repository and navigate to backend:**
+
    ```bash
    cd backend
    ```
 
 2. **Start services with Docker Compose:**
+
    ```bash
    docker-compose up -d
    ```
@@ -53,23 +58,27 @@ A FastAPI-based backend for anomaly detection in financial transaction data usin
 ### Local Development (without Docker)
 
 1. **Create virtual environment:**
+
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
 2. **Install dependencies:**
+
    ```bash
    pip install -r requirements.txt
    ```
 
 3. **Set up environment variables:**
+
    ```bash
    cp .env.example .env
    # Edit .env with your configuration
    ```
 
 4. **Start PostgreSQL and Redis:**
+
    ```bash
    # Using Docker for services only
    docker run -d --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:15
@@ -84,27 +93,32 @@ A FastAPI-based backend for anomaly detection in financial transaction data usin
 ## API Endpoints
 
 ### Health Checks
+
 - `GET /api/v1/health` - Basic health check
 - `GET /api/v1/health/detailed` - Detailed health with service status
 - `GET /api/v1/health/readiness` - Kubernetes readiness probe
 - `GET /api/v1/health/liveness` - Kubernetes liveness probe
 
 ### File Upload (Coming Soon)
+
 - `POST /api/v1/upload` - Upload transaction data files
 - `GET /api/v1/upload/{upload_id}/status` - Check upload processing status
 - `GET /api/v1/upload/history` - List recent uploads
 
 ### Analysis Management (Coming Soon)
+
 - `POST /api/v1/analysis/run` - Trigger anomaly detection analysis
 - `GET /api/v1/analysis/{run_id}/status` - Check analysis progress
 - `GET /api/v1/analysis/{run_id}/results` - Get analysis results
 
 ### Transaction Data (Coming Soon)
+
 - `GET /api/v1/transactions` - List transactions with filtering
 - `GET /api/v1/transactions/{transaction_id}` - Get transaction details
 - `GET /api/v1/transactions/anomalies` - Get flagged transactions
 
 ### Strategy Management (Coming Soon)
+
 - `GET /api/v1/strategies` - List available strategies
 - `POST /api/v1/strategies` - Create custom strategy
 - `PUT /api/v1/strategies/{strategy_id}` - Update strategy
@@ -113,6 +127,7 @@ A FastAPI-based backend for anomaly detection in financial transaction data usin
 ## Database Schema
 
 ### Core Tables
+
 - **file_uploads**: Track uploaded files and processing status
 - **transactions**: Store raw and processed transaction data
 - **strategies**: Store anomaly detection strategy configurations
@@ -123,18 +138,21 @@ A FastAPI-based backend for anomaly detection in financial transaction data usin
 ## Algorithm Framework
 
 ### Statistical Methods
+
 - Z-Score analysis with configurable thresholds
 - Correlation analysis for related transactions
 - Time series anomaly detection
 - Moving average deviations
 
 ### Rule-Based Methods
+
 - Weekend transaction threshold rules
 - Unusual periodization patterns
 - Account-specific rules
 - Time-based pattern detection
 
 ### ML-Based Methods
+
 - Isolation Forest for outlier detection
 - Autoencoders for pattern recognition
 - Clustering-based anomaly detection
@@ -143,6 +161,7 @@ A FastAPI-based backend for anomaly detection in financial transaction data usin
 ## Configuration
 
 ### Environment Variables
+
 ```bash
 # Application
 APP_NAME=Anomaly Detection API
@@ -203,6 +222,7 @@ alembic downgrade -1
 ## Deployment
 
 ### Production Considerations
+
 - Use managed PostgreSQL service
 - Configure Redis cluster for high availability
 - Set up proper logging and monitoring
@@ -210,6 +230,7 @@ alembic downgrade -1
 - Implement proper backup strategies
 
 ### Docker Production Build
+
 ```bash
 docker build -t anomaly-detection-backend .
 docker run -p 8000:8000 anomaly-detection-backend
@@ -225,4 +246,4 @@ docker run -p 8000:8000 anomaly-detection-backend
 
 ## License
 
-[Add your license information here] 
+[Add your license information here]
