@@ -51,7 +51,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
 
   # Celery Worker
   celery:
@@ -69,7 +69,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: celery -A app.celery_app worker --loglevel=info
+    command: celery -A backend.app.celery_app worker --loglevel=info
 
   # Celery Flower (Task Monitor)
   flower:
@@ -81,21 +81,22 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/2
     volumes:
       - .:/app
+      - ./uploads:/app/uploads
     depends_on:
       - redis
-    command: celery -A app.celery_app flower --port=5555
+    command: celery -A backend.app.celery_app flower --port=5555
 
   # Next.js Frontend
   frontend:
     image: node:18-alpine
-    working_dir: /app
+    working_dir: /app/frontend
     ports:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
     volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - .:/app
+      - /app/frontend/node_modules
     depends_on:
       - backend
     command: sh -c "npm install --legacy-peer-deps && npm run dev"

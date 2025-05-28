@@ -8,7 +8,7 @@ import uuid
 import re
 
 from ..utils.exceptions import DataTransformationError
-from ..utils.data_validators import DataValidator
+from ..utils.data_validators import TransactionDataValidator
 from ..config import get_settings
 
 settings = get_settings()
@@ -18,7 +18,7 @@ class DataTransformerService:
     """Service for transforming and enriching transaction data."""
     
     def __init__(self):
-        self.data_validator = DataValidator()
+        self.data_validator = TransactionDataValidator()
     
     def transform_transactions(self, raw_transactions: List[Dict[str, Any]], 
                              upload_id: str) -> pd.DataFrame:

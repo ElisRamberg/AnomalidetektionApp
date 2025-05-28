@@ -1,7 +1,7 @@
 """Celery application configuration."""
 
 from celery import Celery
-from config import get_settings
+from .config import get_settings
 
 settings = get_settings()
 
@@ -11,8 +11,8 @@ celery_app = Celery(
     broker=getattr(settings, 'redis_url', 'redis://localhost:6379/0'),
     backend=getattr(settings, 'redis_url', 'redis://localhost:6379/0'),
     include=[
-        "app.tasks.file_processing",
-        "app.tasks.analysis_tasks"
+        "backend.app.tasks.file_processing",
+        "backend.app.tasks.analysis_tasks"
     ]
 )
 
@@ -32,18 +32,18 @@ celery_app.conf.update(
 
 # Task routing
 celery_app.conf.task_routes = {
-    "app.tasks.file_processing.*": {"queue": "file_processing"},
-    "app.tasks.analysis_tasks.*": {"queue": "analysis"},
+    "backend.app.tasks.file_processing.*": {"queue": "file_processing"},
+    "backend.app.tasks.analysis_tasks.*": {"queue": "analysis"},
 }
 
 # Beat schedule for periodic tasks
 celery_app.conf.beat_schedule = {
     "cleanup-old-uploads": {
-        "task": "app.tasks.file_processing.cleanup_old_uploads",
+        "task": "backend.app.tasks.file_processing.cleanup_old_uploads",
         "schedule": 3600.0,  # Every hour
     },
     "cleanup-old-analyses": {
-        "task": "app.tasks.analysis_tasks.cleanup_old_analyses",
+        "task": "backend.app.tasks.analysis_tasks.cleanup_old_analyses",
         "schedule": 86400.0,  # Every day
     },
 } 

@@ -22,10 +22,12 @@ openpyxl==3.1.2
 xlrd==2.0.1
 lxml==4.9.3
 chardet==5.2.0  # For character encoding detection
+python-magic==0.4.27  # For file type detection
 
 # Async task processing
 celery==5.3.4
 redis==5.0.1
+flower==2.0.1  # For Celery monitoring
 
 # Data validation and serialization
 pydantic==2.5.0

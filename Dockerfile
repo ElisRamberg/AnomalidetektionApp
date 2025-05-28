@@ -8,7 +8,7 @@ ENV PYTHONPATH=/app
 # Set work directory
 WORKDIR /app
 
-# Install system dependencies including Node.js
+# Install system dependencies including Node.js and libmagic
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         gcc \
@@ -20,15 +20,14 @@ RUN apt-get update && \
         vim \
         nano \
         nodejs \
-        npm && \
+        npm \
+        libmagic1 \
+        libmagic-dev && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy and install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy application code
-COPY backend/app/ ./app/
 
 # Create uploads directory
 RUN mkdir -p uploads
@@ -36,5 +35,5 @@ RUN mkdir -p uploads
 # Expose port
 EXPOSE 8000
 
-# Default command
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"] 
+# Default command (will be overridden by docker-compose)
+CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"] 
