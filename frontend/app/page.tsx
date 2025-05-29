@@ -1,9 +1,9 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { AlertTriangle, TrendingUp, DollarSign, Activity } from "lucide-react"
-import { KPICard } from "@/components/dashboard/kpi-card"
 import { AnomalyTimeline } from "@/components/dashboard/anomaly-timeline"
+import { KPICard } from "@/components/dashboard/kpi-card"
 import { RecentAnomalies } from "@/components/dashboard/recent-anomalies"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Activity, AlertTriangle, DollarSign, TrendingUp } from "lucide-react"
 
 export default function DashboardPage() {
   return (
