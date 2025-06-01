@@ -2,6 +2,7 @@
 
 import os
 import uuid
+from datetime import datetime
 from typing import Optional
 
 import aiofiles
@@ -18,6 +19,7 @@ from ..schemas.upload import (
     FileUploadStats,
     FileUploadStatus,
 )
+from ..services.simple_processor import SimpleCSVProcessor
 
 router = APIRouter()
 settings = get_settings()
@@ -139,7 +141,7 @@ async def upload_file(
         # Clean up file if database operation fails
         if os.path.exists(file_path):
             try:
-            os.remove(file_path)
+                os.remove(file_path)
             except OSError:
                 pass  # Don't fail on cleanup failure
 
@@ -240,7 +242,7 @@ async def delete_upload(upload_id: uuid.UUID, db: AsyncSession = Depends(get_asy
     file_path = os.path.join(settings.upload_dir, upload.filename)
     if os.path.exists(file_path):
         try:
-        os.remove(file_path)
+            os.remove(file_path)
         except Exception:
             pass  # Continue even if file deletion fails
 
@@ -249,3 +251,61 @@ async def delete_upload(upload_id: uuid.UUID, db: AsyncSession = Depends(get_asy
     await db.commit()
 
     return {"message": "Upload deleted successfully"}
+
+
+@router.post("/upload/{upload_id}/process", response_model=FileUploadStatus)
+async def process_upload(
+    upload_id: uuid.UUID,
+    db: AsyncSession = Depends(get_async_db),
+):
+    """
+    Manually trigger processing of an uploaded CSV file.
+    """
+    # Retrieve upload record
+    result = await db.execute(select(FileUpload).where(FileUpload.id == upload_id))
+    upload = result.scalar_one_or_none()
+
+    if not upload:
+        raise HTTPException(status_code=404, detail="Upload not found")
+
+    if upload.status != "uploaded":
+        raise HTTPException(status_code=400, detail="Upload not in 'uploaded' status")
+
+    # Update status to processing
+    upload.status = "processing"
+    await db.commit()
+    await db.refresh(upload)
+
+    # Build file path
+    file_path = os.path.join(settings.upload_dir, upload.filename)
+    if not os.path.exists(file_path):
+        upload.status = "failed"
+        upload.error_message = "File not found on disk"
+        await db.commit()
+        await db.refresh(upload)
+        raise HTTPException(status_code=404, detail="File not found on disk")
+
+    # Process CSV file
+    processor = SimpleCSVProcessor()
+    try:
+        transactions = processor.process_csv_file(file_path, str(upload.id))
+        # Persist transactions
+        for txn in transactions:
+            db.add(txn)
+
+        # Update stats and status
+        upload.rows_processed = len(transactions)
+        upload.rows_valid = len(transactions)
+        upload.rows_invalid = 0
+        upload.status = "processed"
+        upload.processed_at = datetime.now()
+        await db.commit()
+        await db.refresh(upload)
+    except Exception as e:
+        upload.status = "failed"
+        upload.error_message = str(e)
+        await db.commit()
+        await db.refresh(upload)
+        raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
+
+    return FileUploadStatus.from_orm(upload)
