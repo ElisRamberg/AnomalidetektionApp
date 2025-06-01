@@ -1,4 +1,4 @@
-"""File upload endpoints."""
+"""File upload endpoints - Simplified working version."""
 
 import os
 import uuid
@@ -18,14 +18,42 @@ from ..schemas.upload import (
     FileUploadStats,
     FileUploadStatus,
 )
-from ..services.file_processor import FileProcessorService
-from ..utils.exceptions import FileProcessingError, UnsupportedFileTypeError
-from ..utils.file_validators import FileValidator
 
 router = APIRouter()
 settings = get_settings()
-file_processor = FileProcessorService()
-file_validator = FileValidator()
+
+
+# Simplified file validation
+def validate_file_basic(file: UploadFile) -> tuple[str, str]:
+    """Basic file validation - returns file_type and error message if any."""
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="Filename is required")
+
+    # Check file size (basic check on filename, full check after read)
+    if file.size and file.size > settings.max_file_size:
+        max_mb = settings.max_file_size / (1024 * 1024)
+        raise HTTPException(
+            status_code=400, detail=f"File too large. Maximum size: {max_mb:.1f}MB"
+        )
+
+    # Get file extension
+    file_extension = os.path.splitext(file.filename)[1].lower()
+    extension_to_type = {
+        ".csv": "csv",
+        ".json": "json",
+        ".xlsx": "xlsx",
+        ".xls": "xls",
+        ".xml": "xml",
+    }
+
+    if file_extension not in extension_to_type:
+        allowed_types = ", ".join(extension_to_type.keys())
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file type. Allowed: {allowed_types}",
+        )
+
+    return extension_to_type[file_extension], ""
 
 
 @router.post("/upload", response_model=FileUploadResponse)
@@ -38,48 +66,48 @@ async def upload_file(
     """
     Upload a file for processing and analysis.
 
-    Supports CSV, JSON, Excel, XML, and SIE4 file formats.
+    Currently supports CSV, JSON, Excel, and XML files.
     """
-    # Validate file
+    # Basic validation
+    file_type, error = validate_file_basic(file)
+    if error:
+        raise HTTPException(status_code=400, detail=error)
+
+    # Read file content
     try:
         file_content = await file.read()
         await file.seek(0)  # Reset file position
 
-        # Basic file validation
-        file_validator.validate_file_size(len(file_content))
-        file_validator.validate_file_type(file.filename)
+        # Validate file size after reading
+        if len(file_content) == 0:
+            raise HTTPException(status_code=400, detail="File is empty")
 
-        # Get file type
-        file_type = file_validator.get_file_type(file.filename)
+        if len(file_content) > settings.max_file_size:
+            max_mb = settings.max_file_size / (1024 * 1024)
+            current_mb = len(file_content) / (1024 * 1024)
+            msg = f"File size ({current_mb:.1f}MB) exceeds " f"limit ({max_mb:.1f}MB)"
+            raise HTTPException(status_code=400, detail=msg)
 
-        # Validate file structure
-        validation_result = file_processor.validate_file(
-            file_content, file.filename, file_type
-        )
-
-        if not validation_result.get("valid", False):
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid file structure: {validation_result.get('error', 'Unknown error')}",
-            )
-
-    except UnsupportedFileTypeError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except FileProcessingError as e:
-        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"File validation failed: {str(e)}")
+        msg = f"Failed to read file: {str(e)}"
+        raise HTTPException(status_code=500, detail=msg)
 
-    # Generate unique filename
+    # Generate unique filename and path
     file_id = uuid.uuid4()
     file_extension = os.path.splitext(file.filename)[1]
     stored_filename = f"{file_id}{file_extension}"
     file_path = os.path.join(settings.upload_dir, stored_filename)
 
+    # Create upload directory if needed
     try:
-        # Create upload directory if it doesn't exist
         os.makedirs(settings.upload_dir, exist_ok=True)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to create upload directory: {str(e)}"
+        )
 
+    # Save file and create database record in transaction
+    try:
         # Save file to disk
         async with aiofiles.open(file_path, "wb") as f:
             await f.write(file_content)
@@ -93,10 +121,10 @@ async def upload_file(
             file_type=file_type,
             mime_type=file.content_type,
             status="uploaded",
-            metadata={
-                "validation_result": validation_result,
+            file_metadata={
                 "auto_analyze": auto_analyze,
                 "strategy_id": strategy_id,
+                "upload_method": "api",
             },
         )
 
@@ -104,15 +132,19 @@ async def upload_file(
         await db.commit()
         await db.refresh(upload_record)
 
-        # TODO: Trigger async processing if auto_analyze is True
-        # This will be implemented when Celery tasks are added
-
+        # For now, just mark as uploaded. Processing will be added in next layer
         return FileUploadResponse.from_orm(upload_record)
 
     except Exception as e:
         # Clean up file if database operation fails
         if os.path.exists(file_path):
+            try:
             os.remove(file_path)
+            except OSError:
+                pass  # Don't fail on cleanup failure
+
+        # Rollback database transaction
+        await db.rollback()
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 
@@ -143,17 +175,13 @@ async def get_upload_history(
 
     # Build query
     query = select(FileUpload)
-
     if status:
         query = query.where(FileUpload.status == status)
 
-    # Count total records
-    count_result = await db.execute(
-        select(FileUpload.id).where(
-            query.whereclause if query.whereclause is not None else True
-        )
-    )
-    total = len(count_result.all())
+    # Count total records - simplified approach
+    count_result = await db.execute(query)
+    all_uploads = count_result.scalars().all()
+    total = len(all_uploads)
 
     # Get paginated results
     offset = (page - 1) * per_page
@@ -177,9 +205,9 @@ async def get_upload_history(
 @router.get("/upload/stats", response_model=FileUploadStats)
 async def get_upload_stats(db: AsyncSession = Depends(get_async_db)):
     """Get upload statistics."""
-    # Count uploads by status
-    all_uploads = await db.execute(select(FileUpload))
-    uploads = all_uploads.scalars().all()
+    # Get all uploads - simplified for now
+    all_uploads_result = await db.execute(select(FileUpload))
+    uploads = all_uploads_result.scalars().all()
 
     total_uploads = len(uploads)
     successful_uploads = len([u for u in uploads if u.status == "processed"])
@@ -187,12 +215,7 @@ async def get_upload_stats(db: AsyncSession = Depends(get_async_db)):
     processing_uploads = len(
         [u for u in uploads if u.status in ["uploaded", "processing"]]
     )
-
     total_size_bytes = sum(u.file_size for u in uploads)
-
-    # TODO: Calculate total_transactions_processed from transaction table
-    # This will be implemented when transaction endpoints are added
-    total_transactions_processed = 0
 
     return FileUploadStats(
         total_uploads=total_uploads,
@@ -200,7 +223,7 @@ async def get_upload_stats(db: AsyncSession = Depends(get_async_db)):
         failed_uploads=failed_uploads,
         processing_uploads=processing_uploads,
         total_size_bytes=total_size_bytes,
-        total_transactions_processed=total_transactions_processed,
+        total_transactions_processed=0,  # Will implement in processing layer
     )
 
 
@@ -216,7 +239,10 @@ async def delete_upload(upload_id: uuid.UUID, db: AsyncSession = Depends(get_asy
     # Delete file from disk
     file_path = os.path.join(settings.upload_dir, upload.filename)
     if os.path.exists(file_path):
+        try:
         os.remove(file_path)
+        except Exception:
+            pass  # Continue even if file deletion fails
 
     # Delete from database
     await db.delete(upload)

@@ -1,6 +1,7 @@
 """Celery application configuration."""
 
 from celery import Celery
+
 from .config import get_settings
 
 settings = get_settings()
@@ -8,12 +9,9 @@ settings = get_settings()
 # Create Celery instance
 celery_app = Celery(
     "anomaly_detection",
-    broker=getattr(settings, 'redis_url', 'redis://localhost:6379/0'),
-    backend=getattr(settings, 'redis_url', 'redis://localhost:6379/0'),
-    include=[
-        "backend.app.tasks.file_processing",
-        "backend.app.tasks.analysis_tasks"
-    ]
+    broker=getattr(settings, "redis_url", "redis://localhost:6379/0"),
+    backend=getattr(settings, "redis_url", "redis://localhost:6379/0"),
+    include=["backend.app.tasks.file_processing", "backend.app.tasks.analysis_tasks"],
 )
 
 # Celery configuration
@@ -30,11 +28,11 @@ celery_app.conf.update(
     worker_max_tasks_per_child=1000,
 )
 
-# Task routing
-celery_app.conf.task_routes = {
-    "backend.app.tasks.file_processing.*": {"queue": "file_processing"},
-    "backend.app.tasks.analysis_tasks.*": {"queue": "analysis"},
-}
+# Task routing - disabled for now, using default queue
+# celery_app.conf.task_routes = {
+#     "backend.app.tasks.file_processing.*": {"queue": "file_processing"},
+#     "backend.app.tasks.analysis_tasks.*": {"queue": "analysis"},
+# }
 
 # Beat schedule for periodic tasks
 celery_app.conf.beat_schedule = {
@@ -46,4 +44,4 @@ celery_app.conf.beat_schedule = {
         "task": "backend.app.tasks.analysis_tasks.cleanup_old_analyses",
         "schedule": 86400.0,  # Every day
     },
-} 
+}

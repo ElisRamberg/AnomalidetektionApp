@@ -1,0 +1,20 @@
+[
+  {
+    "date": "2024-01-01",
+    "amount": 100.50,
+    "account_id": "ACC001",
+    "description": "Initial deposit"
+  },
+  {
+    "date": "2024-01-02", 
+    "amount": -25.00,
+    "account_id": "ACC001",
+    "description": "Coffee shop"
+  },
+  {
+    "date": "2024-01-03",
+    "amount": 500.00,
+    "account_id": "ACC001", 
+    "description": "Salary payment"
+  }
+] 
